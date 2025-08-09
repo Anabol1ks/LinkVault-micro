@@ -2,6 +2,7 @@ package main
 
 import (
 	"linkv-auth/config"
+	_ "linkv-auth/docs"
 	"linkv-auth/internal/handler"
 	"linkv-auth/internal/repository"
 	"linkv-auth/internal/router"
@@ -14,6 +15,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// @Title						LinkVault AuthService API
+// @Version					1.0
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @host      localhost:8081
+// @BasePath  /api/v1
 func main() {
 	_ = godotenv.Load()
 	isDev := os.Getenv("ENV") == "development"

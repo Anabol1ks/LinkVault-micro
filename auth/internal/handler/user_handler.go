@@ -27,17 +27,18 @@ type UserRegisterRequest struct {
 }
 
 // Register godoc
-// @Summary Регистрация пользователя
-// @Description Регистрация нового пользователя
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param user body UserRegisterRequest true "Параметры регистрации пользователя"
-// @Success 201 {object} response.UserRegisterResponse "Успешная регистрация пользователя"
-// @Failure 400 {object} response.ErrorResponse "Ошибка валидации"
-// @Failure 409 {object} response.ErrorResponse "Пользователь уже существует"
-// @Failure 500 {object} response.ErrorResponse "Ошибка сервера"
-// @Router /auth/register [post]
+//
+//	@Summary		Регистрация пользователя
+//	@Description	Регистрация нового пользователя
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		UserRegisterRequest				true	"Параметры регистрации пользователя"
+//	@Success		201		{object}	response.UserRegisterResponse	"Успешная регистрация пользователя"
+//	@Failure		400		{object}	response.ErrorResponse			"Ошибка валидации"
+//	@Failure		409		{object}	response.ErrorResponse			"Пользователь уже существует"
+//	@Failure		500		{object}	response.ErrorResponse			"Ошибка сервера"
+//	@Router			/api/v1/auth/register [post]
 func (h *UserHandler) Register(c *gin.Context) {
 	var req UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -71,18 +72,19 @@ type LoginRequest struct {
 }
 
 // Login godoc
-// @Summary Вход пользователя
-// @Description Вход существующего пользователя
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param user body LoginRequest true "Параметры входа пользователя"
-// @Success 200 {object} response.TokenResponse "Успешный вход пользователя"
-// @Failure 400 {object} response.ErrorResponse "Ошибка валидации"
-// @Failure 404 {object} response.ErrorResponse "Пользователь не найден"
-// @Failure 401 {object} response.ErrorResponse "Неверный пароль"
-// @Failure 500 {object} response.ErrorResponse "Ошибка сервера"
-// @Router /auth/login [post]
+//
+//	@Summary		Вход пользователя
+//	@Description	Вход существующего пользователя
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		LoginRequest			true	"Параметры входа пользователя"
+//	@Success		200		{object}	response.TokenResponse	"Успешный вход пользователя"
+//	@Failure		400		{object}	response.ErrorResponse	"Ошибка валидации"
+//	@Failure		404		{object}	response.ErrorResponse	"Пользователь не найден"
+//	@Failure		401		{object}	response.ErrorResponse	"Неверный пароль"
+//	@Failure		500		{object}	response.ErrorResponse	"Ошибка сервера"
+//	@Router			/api/v1/auth/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -116,17 +118,18 @@ type RefreshRequest struct {
 }
 
 // Refresh godoc
-// @Summary Обновление токена
-// @Description Обновление refresh-токена
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param user body RefreshRequest true "Параметры обновления токена"
-// @Success 200 {object} response.TokenResponse "Успешное обновление токена"
-// @Failure 400 {object} response.ErrorResponse "Ошибка валидации"
-// @Failure 401 {object} response.ErrorResponse "Неверный токен"
-// @Failure 500 {object} response.ErrorResponse "Ошибка сервера"
-// @Router /auth/refresh [post]
+//
+//	@Summary		Обновление токена
+//	@Description	Обновление refresh-токена
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		RefreshRequest			true	"Параметры обновления токена"
+//	@Success		200		{object}	response.TokenResponse	"Успешное обновление токена"
+//	@Failure		400		{object}	response.ErrorResponse	"Ошибка валидации"
+//	@Failure		401		{object}	response.ErrorResponse	"Неверный токен"
+//	@Failure		500		{object}	response.ErrorResponse	"Ошибка сервера"
+//	@Router			/api/v1/auth/refresh [post]
 func (h *UserHandler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -154,15 +157,16 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 }
 
 // Profile godoc
-// @Summary Получпение профиля
-// @Description Получение своего профиля по токену
-// @Security BearerAuth
-// @Tags users
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.UserResponse "Полученный профиль"
-// @Failure 404 {object} response.ErrorResponse "Пользователь не найден"
-// @Router /user/profile [get]
+//
+//	@Summary		Получпение профиля
+//	@Description	Получение своего профиля по токену
+//	@Security		BearerAuth
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.UserResponse	"Полученный профиль"
+//	@Failure		404	{object}	response.ErrorResponse	"Пользователь не найден"
+//	@Router			/api/v1/profile/me [get]
 func (h *UserHandler) Profile(c *gin.Context) {
 	var userID uuid.UUID
 	if val, exists := c.Get("user_id"); exists {
