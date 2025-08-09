@@ -22,3 +22,19 @@ func ConnectDB(cfg *config.DBConfig, log *zap.Logger) *gorm.DB {
 	log.Info("Подключение к базе данных успешно установлено")
 	return db
 }
+
+func CloseDB(db *gorm.DB, log *zap.Logger) {
+	if db == nil {
+		return
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Error("Не удалось получить объект sql.DB для закрытия", zap.Error(err))
+		return
+	}
+	if err := sqlDB.Close(); err != nil {
+		log.Error("Ошибка при закрытии соединения с БД", zap.Error(err))
+	} else {
+		log.Info("Соединение с БД закрыто")
+	}
+}

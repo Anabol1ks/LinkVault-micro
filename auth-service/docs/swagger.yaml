@@ -56,7 +56,7 @@ definitions:
     properties:
       email:
         type: string
-      id:
+      name:
         type: string
     type: object
 info:
@@ -100,6 +100,29 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Вход пользователя
+      tags:
+      - users
+  /api/v1/auth/logout:
+    post:
+      description: Ревокирует все активные refresh токены пользователя
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Ошибка сервера
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Выход (ревокация refresh токенов)
       tags:
       - users
   /api/v1/auth/refresh:

@@ -194,3 +194,34 @@ func (h *UserHandler) Profile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, userResponse)
 }
+
+// Logout godoc
+//
+// @Summary Выход (ревокация refresh токенов)
+// @Description Ревокирует все активные refresh токены пользователя
+// @Security BearerAuth
+// @Tags users
+// @Produce json
+// @Success 204 {string} string ""
+// @Failure 401 {object} response.ErrorResponse "Неавторизован"
+// @Failure 500 {object} response.ErrorResponse "Ошибка сервера"
+// @Router /api/v1/auth/logout [post]
+func (h *UserHandler) Logout(c *gin.Context) {
+	var userID uuid.UUID
+	if val, exists := c.Get("user_id"); exists {
+		if parsed, err := uuid.Parse(val.(string)); err == nil {
+			userID = parsed
+		} else {
+			c.JSON(http.StatusUnauthorized, response.ErrorResponse{Error: "Invalid user ID"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusUnauthorized, response.ErrorResponse{Error: "Missing user ID"})
+		return
+	}
+	if err := h.service.Logout(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, response.ErrorResponse{Error: "Ошибка сервера"})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"linkv-auth/config"
 	_ "linkv-auth/docs"
 	"linkv-auth/internal/handler"
+	"linkv-auth/internal/maintenance"
 	"linkv-auth/internal/repository"
 	"linkv-auth/internal/router"
 	"linkv-auth/internal/service"
 	"linkv-auth/internal/storage"
 	"linkv-auth/pkg/logger"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -28,7 +34,6 @@ func main() {
 	if err := logger.Init(isDev); err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
 
 	defer logger.Sync()
 
@@ -44,11 +49,44 @@ func main() {
 	storage.Migrate(db, log)
 
 	userRepo := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepo, log, cfg)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
+	userService := service.NewUserService(userRepo, refreshTokenRepo, log, cfg)
 	userHandler := handler.NewUserHandler(userService)
 
-	r := router.Router(db, log, userHandler, cfg)
-	if err := r.Run(cfg.Port); err != nil {
-		log.Fatal("Не удалось запустить сервер", zap.Error(err))
+	scheduler := maintenance.NewScheduler(log, refreshTokenRepo)
+	appCtx, cancelScheduler := context.WithCancel(context.Background())
+	if err := scheduler.Start(appCtx); err != nil {
+		log.Error("Не удалось запустить планировщик", zap.Error(err))
 	}
+
+	r := router.Router(db, log, userHandler, cfg)
+	srv := &http.Server{
+		Addr:    cfg.Port, // or ":" + cfg.Port если cfg.Port = "8081"
+		Handler: r,
+	}
+
+	// run server in goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server start failed", zap.Error(err))
+		}
+	}()
+
+	// wait for signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Info("Shutting down server...")
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cancelScheduler() // останавливаем cron
+
+	if err := srv.Shutdown(ctxShutDown); err != nil {
+		log.Error("Server forced to shutdown", zap.Error(err))
+	}
+
+	storage.CloseDB(db, log)
+
+	log.Info("Server exiting")
 }

@@ -31,6 +31,7 @@ func Router(db *gorm.DB, log *zap.Logger, userHandler *handler.UserHandler, cfg 
 		auth.POST("/register", userHandler.Register)
 		auth.POST("/login", userHandler.Login)
 		auth.POST("/refresh", userHandler.Refresh)
+		auth.POST("/logout", middleware.JWTAuth(&cfg.JWT), userHandler.Logout)
 	}
 
 	r.GET("/api/v1/profile/me", middleware.JWTAuth(&cfg.JWT), userHandler.Profile)
