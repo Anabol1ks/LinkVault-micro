@@ -19,7 +19,7 @@ type UserService struct {
 	repo   *repository.UserRepository
 	rtRepo *repository.RefreshTokenRepository
 	log    *zap.Logger
-	cfg    *config.Config
+	Cfg    *config.Config
 }
 
 func NewUserService(repo *repository.UserRepository, rtRepo *repository.RefreshTokenRepository, log *zap.Logger, cfg *config.Config) *UserService {
@@ -27,7 +27,7 @@ func NewUserService(repo *repository.UserRepository, rtRepo *repository.RefreshT
 		repo:   repo,
 		rtRepo: rtRepo,
 		log:    log,
-		cfg:    cfg,
+		Cfg:    cfg,
 	}
 }
 
@@ -80,13 +80,13 @@ func (s *UserService) Login(email, password string) (access, refresh string, err
 		return "", "", ErrInvalidPassword
 	}
 
-	access, accessClaims, err := jwt.GenerateAccessToken(user.ID.String(), &s.cfg.JWT)
+	access, accessClaims, err := jwt.GenerateAccessToken(user.ID.String(), &s.Cfg.JWT)
 	if err != nil {
 		s.log.Error("Failed to generate access token", zap.Error(err))
 		return "", "", err
 	}
 
-	refresh, refreshClaims, err := jwt.GenerateRefreshToken(user.ID.String(), &s.cfg.JWT)
+	refresh, refreshClaims, err := jwt.GenerateRefreshToken(user.ID.String(), &s.Cfg.JWT)
 	if err != nil {
 		s.log.Error("Failed to generate refresh token", zap.Error(err))
 		return "", "", err
@@ -109,7 +109,7 @@ func (s *UserService) Login(email, password string) (access, refresh string, err
 var ErrInvalidToken = errors.New("invalid token")
 
 func (s *UserService) Refresh(refreshToken string) (access, refresh string, err error) {
-	claims, err := jwt.ParseRefreshToken(refreshToken, s.cfg.JWT.Refresh)
+	claims, err := jwt.ParseRefreshToken(refreshToken, s.Cfg.JWT.Refresh)
 	if err != nil {
 		return "", "", ErrInvalidToken
 	}
@@ -123,11 +123,11 @@ func (s *UserService) Refresh(refreshToken string) (access, refresh string, err 
 		s.log.Warn("Failed to revoke old refresh token", zap.Error(err))
 	}
 
-	access, accessClaims, err := jwt.GenerateAccessToken(claims.UserID, &s.cfg.JWT)
+	access, accessClaims, err := jwt.GenerateAccessToken(claims.UserID, &s.Cfg.JWT)
 	if err != nil {
 		return "", "", err
 	}
-	refresh, refreshClaims, err := jwt.GenerateRefreshToken(claims.UserID, &s.cfg.JWT)
+	refresh, refreshClaims, err := jwt.GenerateRefreshToken(claims.UserID, &s.Cfg.JWT)
 	if err != nil {
 		return "", "", err
 	}

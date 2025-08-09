@@ -4,21 +4,22 @@ import (
 	"context"
 	"linkv-auth/config"
 	_ "linkv-auth/docs"
-	"linkv-auth/internal/handler"
 	"linkv-auth/internal/maintenance"
 	"linkv-auth/internal/repository"
-	"linkv-auth/internal/router"
 	"linkv-auth/internal/service"
 	"linkv-auth/internal/storage"
 	"linkv-auth/pkg/logger"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
+
+	authv1 "linkv-auth/api/proto/auth/v1"
+	grpcserver "linkv-auth/internal/transport/grpc"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // @Title						LinkVault AuthService API
@@ -51,7 +52,6 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 	userService := service.NewUserService(userRepo, refreshTokenRepo, log, cfg)
-	userHandler := handler.NewUserHandler(userService)
 
 	scheduler := maintenance.NewScheduler(log, refreshTokenRepo)
 	appCtx, cancelScheduler := context.WithCancel(context.Background())
@@ -59,32 +59,31 @@ func main() {
 		log.Error("Не удалось запустить планировщик", zap.Error(err))
 	}
 
-	r := router.Router(db, log, userHandler, cfg)
-	srv := &http.Server{
-		Addr:    cfg.Port,
-		Handler: r,
+	// gRPC server setup
+	lis, err := net.Listen("tcp", cfg.Port)
+	if err != nil {
+		log.Fatal("failed to listen", zap.Error(err))
 	}
 
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcserver.AuthInterceptor(&cfg.JWT)),
+	)
+	authv1.RegisterAuthServiceServer(grpcServer, grpcserver.NewAuthServer(userService, log))
+
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("Server start failed", zap.Error(err))
+		log.Info("Starting gRPC server", zap.String("addr", cfg.Port))
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatal("gRPC server failed", zap.Error(err))
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Info("Shutting down server...")
+	log.Info("Shutting down gRPC server...")
 
-	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	grpcServer.GracefulStop()
 	cancelScheduler()
-
-	if err := srv.Shutdown(ctxShutDown); err != nil {
-		log.Error("Server forced to shutdown", zap.Error(err))
-	}
-
 	storage.CloseDB(db, log)
-
 	log.Info("Server exiting")
 }
