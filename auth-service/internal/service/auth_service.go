@@ -9,8 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-
-	"go.uber.org/zap"
 )
 
 var ErrUserExists = errors.New("user already exists")
@@ -18,28 +16,24 @@ var ErrUserExists = errors.New("user already exists")
 type UserService struct {
 	repo   *repository.UserRepository
 	rtRepo *repository.RefreshTokenRepository
-	log    *zap.Logger
 	Cfg    *config.Config
 }
 
-func NewUserService(repo *repository.UserRepository, rtRepo *repository.RefreshTokenRepository, log *zap.Logger, cfg *config.Config) *UserService {
+func NewUserService(repo *repository.UserRepository, rtRepo *repository.RefreshTokenRepository, cfg *config.Config) *UserService {
 	return &UserService{
 		repo:   repo,
 		rtRepo: rtRepo,
-		log:    log,
 		Cfg:    cfg,
 	}
 }
 
 func (s *UserService) Register(name, email, password string) (*models.User, error) {
 	if _, err := s.repo.FindByEmail(email); err == nil {
-		s.log.Warn("User already exists", zap.String("email", email))
 		return nil, ErrUserExists
 	}
 
 	hashedPassword, err := hashedPassword(password)
 	if err != nil {
-		s.log.Error("Failed to hash password", zap.Error(err))
 		return nil, err
 	}
 
@@ -50,7 +44,6 @@ func (s *UserService) Register(name, email, password string) (*models.User, erro
 	}
 
 	if err := s.repo.Create(user); err != nil {
-		s.log.Error("Failed to register user", zap.Error(err))
 		return nil, err
 	}
 
@@ -71,24 +64,20 @@ var ErrInvalidPassword = errors.New("invalid password")
 func (s *UserService) Login(email, password string) (access, refresh string, err error) {
 	user, err := s.repo.FindByEmail(email)
 	if err != nil {
-		s.log.Warn("User not found", zap.String("email", email))
 		return "", "", ErrUserNotFound
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		s.log.Warn("Invalid password", zap.String("email", email))
 		return "", "", ErrInvalidPassword
 	}
 
 	access, accessClaims, err := jwt.GenerateAccessToken(user.ID.String(), &s.Cfg.JWT)
 	if err != nil {
-		s.log.Error("Failed to generate access token", zap.Error(err))
 		return "", "", err
 	}
 
 	refresh, refreshClaims, err := jwt.GenerateRefreshToken(user.ID.String(), &s.Cfg.JWT)
 	if err != nil {
-		s.log.Error("Failed to generate refresh token", zap.Error(err))
 		return "", "", err
 	}
 
@@ -98,7 +87,6 @@ func (s *UserService) Login(email, password string) (access, refresh string, err
 		ExpiresAt: refreshClaims.ExpiresAt.Time,
 		Revoked:   false,
 	}); err != nil {
-		s.log.Error("Failed to persist refresh token", zap.Error(err))
 		return "", "", err
 	}
 
@@ -119,9 +107,7 @@ func (s *UserService) Refresh(refreshToken string) (access, refresh string, err 
 		return "", "", ErrInvalidToken
 	}
 
-	if err := s.rtRepo.RevokeByJTI(rt.JTI); err != nil {
-		s.log.Warn("Failed to revoke old refresh token", zap.Error(err))
-	}
+	_ = s.rtRepo.RevokeByJTI(rt.JTI) // игнорируем ошибку
 
 	access, accessClaims, err := jwt.GenerateAccessToken(claims.UserID, &s.Cfg.JWT)
 	if err != nil {

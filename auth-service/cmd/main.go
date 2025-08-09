@@ -20,6 +20,9 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
 )
 
 // @Title						LinkVault AuthService API
@@ -51,7 +54,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
-	userService := service.NewUserService(userRepo, refreshTokenRepo, log, cfg)
+	userService := service.NewUserService(userRepo, refreshTokenRepo, cfg)
 
 	scheduler := maintenance.NewScheduler(log, refreshTokenRepo)
 	appCtx, cancelScheduler := context.WithCancel(context.Background())
@@ -68,6 +71,14 @@ func main() {
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(grpcserver.AuthInterceptor(&cfg.JWT)),
 	)
+
+	// gRPC health check service
+	healthSrv := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthSrv)
+	healthSrv.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+
+	reflection.Register(grpcServer)
+
 	authv1.RegisterAuthServiceServer(grpcServer, grpcserver.NewAuthServer(userService, log))
 
 	go func() {
