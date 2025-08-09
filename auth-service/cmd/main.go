@@ -61,18 +61,16 @@ func main() {
 
 	r := router.Router(db, log, userHandler, cfg)
 	srv := &http.Server{
-		Addr:    cfg.Port, // or ":" + cfg.Port если cfg.Port = "8081"
+		Addr:    cfg.Port,
 		Handler: r,
 	}
 
-	// run server in goroutine
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Server start failed", zap.Error(err))
 		}
 	}()
 
-	// wait for signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -80,7 +78,7 @@ func main() {
 
 	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	cancelScheduler() // останавливаем cron
+	cancelScheduler()
 
 	if err := srv.Shutdown(ctxShutDown); err != nil {
 		log.Error("Server forced to shutdown", zap.Error(err))

@@ -26,6 +26,23 @@ func Router(db *gorm.DB, log *zap.Logger, userHandler *handler.UserHandler, cfg 
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	r.GET("/health/live", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "up"})
+	})
+
+	r.GET("/health/ready", func(c *gin.Context) {
+		if sqlDB, err := db.DB(); err != nil {
+			log.Error("DB handle error", zap.Error(err))
+			c.JSON(503, gin.H{"status": "down", "db": "err"})
+			return
+		} else if err := sqlDB.Ping(); err != nil {
+			log.Warn("DB ping failed", zap.Error(err))
+			c.JSON(503, gin.H{"status": "degraded", "db": "unreachable"})
+			return
+		}
+		c.JSON(200, gin.H{"status": "ready", "db": "ok"})
+	})
+
 	auth := r.Group("/api/v1/auth")
 	{
 		auth.POST("/register", userHandler.Register)
