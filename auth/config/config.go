@@ -10,8 +10,9 @@ import (
 )
 
 type Config struct {
-	JWT JWTConfig
-	DB  DBConfig
+	Port string
+	JWT  JWTConfig
+	DB   DBConfig
 }
 
 type JWTConfig struct {
@@ -32,6 +33,7 @@ type DBConfig struct {
 
 func Load(log *zap.Logger) *Config {
 	return &Config{
+		Port: getEnv("APP_PORT", log),
 		DB: DBConfig{
 			Host:     getEnv("DB_HOST", log),
 			Port:     getEnv("DB_PORT", log),
