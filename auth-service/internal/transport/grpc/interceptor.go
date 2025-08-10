@@ -47,6 +47,7 @@ func AuthInterceptor(jwtCfg *config.JWTConfig) grpc.UnaryServerInterceptor {
 }
 
 var authRequiredMethods = map[string]bool{
-	"/auth.v1.AuthService/GetProfile": true,
-	"/auth.v1.AuthService/Logout":     true,
+	"/auth.v1.AuthService/GetProfile":              true,
+	"/auth.v1.AuthService/Logout":                  true,
+	"/auth.v1.AuthService/ResendVerificationEmail": true,
 }

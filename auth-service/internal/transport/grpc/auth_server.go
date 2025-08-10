@@ -147,3 +147,86 @@ func (s *AuthServer) ValidateAccessToken(ctx context.Context, req *authv1.Valida
 		Valid:  true,
 	}, nil
 }
+
+func (s *AuthServer) VerifyEmail(ctx context.Context, req *authv1.VerifyEmailRequest) (*emptypb.Empty, error) {
+	s.log.Info("start", zap.String("op", "VerifyEmail"))
+	if err := req.Validate(); err != nil {
+		s.log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+	if err := s.userService.VerifyEmail(req.Token); err != nil {
+		switch {
+		case errors.Is(err, service.ErrInvalidToken):
+			s.log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+		default:
+			s.log.Error("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
+		}
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *AuthServer) ResendVerificationEmail(ctx context.Context, _ *authv1.ResendVerificationEmailRequest) (*emptypb.Empty, error) {
+	s.log.Info("start", zap.String("op", "ResendVerificationEmail"))
+	userID, ok := ctx.Value("user_id").(uuid.UUID)
+	if !ok {
+		s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(errors.New("user_id not found in context")))
+		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
+	}
+	if err := s.userService.ResendVerificationEmail(userID); err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
+		case errors.Is(err, service.ErrEmailAlready):
+			s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			return nil, status.Errorf(codes.AlreadyExists, "email already verified: %v", err)
+		default:
+			s.log.Error("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
+		}
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *AuthServer) RequestPasswordReset(ctx context.Context, req *authv1.RequestPasswordResetRequest) (*emptypb.Empty, error) {
+	s.log.Info("start", zap.String("op", "RequestPasswordReset"))
+	if err := req.Validate(); err != nil {
+		s.log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+	if err := s.userService.RequestPasswordReset(req.Email); err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			s.log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
+		default:
+			s.log.Error("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
+		}
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *AuthServer) ConfirmPasswordReset(ctx context.Context, req *authv1.ConfirmPasswordResetRequest) (*emptypb.Empty, error) {
+	s.log.Info("start", zap.String("op", "ConfirmPasswordReset"))
+	if err := req.Validate(); err != nil {
+		s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+	if err := s.userService.ConfirmPasswordReset(req.Token, req.NewPassword); err != nil {
+		switch {
+		case errors.Is(err, service.ErrInvalidToken):
+			s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+		case errors.Is(err, service.ErrUserNotFound):
+			s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
+		default:
+			s.log.Error("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
+		}
+	}
+	return &emptypb.Empty{}, nil
+}

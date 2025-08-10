@@ -54,7 +54,10 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
-	userService := service.NewUserService(userRepo, refreshTokenRepo, cfg)
+	emailTokenRepo := repository.NewEmailVerificationTokenRepository(db)
+	passwordResetRepo := repository.NewPasswordResetTokenRepository(db)
+
+	userService := service.NewUserService(userRepo, refreshTokenRepo, emailTokenRepo, passwordResetRepo, cfg)
 
 	scheduler := maintenance.NewScheduler(log, refreshTokenRepo)
 	appCtx, cancelScheduler := context.WithCancel(context.Background())

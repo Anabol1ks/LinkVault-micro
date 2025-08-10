@@ -36,3 +36,12 @@ func (r *UserRepository) FindByID(userID uuid.UUID) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) MarkEmailVerified(userID uuid.UUID) error {
+	return r.db.Model(&models.User{}).Where("id = ?", userID).Update("email_verified", true).Error
+}
+
+// UpdatePassword обновляет хеш пароля пользователя по ID
+func (r *UserRepository) UpdatePassword(user *models.User) error {
+	return r.db.Model(&models.User{}).Where("id = ?", user.ID).Update("password_hash", user.PasswordHash).Error
+}

@@ -6,6 +6,7 @@ import (
 	"linkv-auth/internal/jwt"
 	"linkv-auth/internal/models"
 	"linkv-auth/internal/repository"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -14,16 +15,26 @@ import (
 var ErrUserExists = errors.New("user already exists")
 
 type UserService struct {
-	repo   *repository.UserRepository
-	rtRepo *repository.RefreshTokenRepository
-	Cfg    *config.Config
+	repo              *repository.UserRepository
+	rtRepo            *repository.RefreshTokenRepository
+	emailTokenRepo    *repository.EmailVerificationTokenRepository
+	passwordResetRepo *repository.PasswordResetTokenRepository
+	Cfg               *config.Config
 }
 
-func NewUserService(repo *repository.UserRepository, rtRepo *repository.RefreshTokenRepository, cfg *config.Config) *UserService {
+func NewUserService(
+	repo *repository.UserRepository,
+	rtRepo *repository.RefreshTokenRepository,
+	emailTokenRepo *repository.EmailVerificationTokenRepository,
+	passwordResetRepo *repository.PasswordResetTokenRepository,
+	cfg *config.Config,
+) *UserService {
 	return &UserService{
-		repo:   repo,
-		rtRepo: rtRepo,
-		Cfg:    cfg,
+		repo:              repo,
+		rtRepo:            rtRepo,
+		emailTokenRepo:    emailTokenRepo,
+		passwordResetRepo: passwordResetRepo,
+		Cfg:               cfg,
 	}
 }
 
@@ -44,6 +55,16 @@ func (s *UserService) Register(name, email, password string) (*models.User, erro
 	}
 
 	if err := s.repo.Create(user); err != nil {
+		return nil, err
+	}
+
+	emailVerToken := &models.EmailVerificationToken{
+		UserID:    user.ID,
+		Token:     uuid.New().String(),
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	if err := s.emailTokenRepo.Create(emailVerToken); err != nil {
 		return nil, err
 	}
 
@@ -140,6 +161,94 @@ func (s *UserService) Profile(userID uuid.UUID) (*models.User, error) {
 
 func (s *UserService) Logout(userID uuid.UUID) error {
 	if err := s.rtRepo.RevokeAllForUser(userID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) VerifyEmail(token string) error {
+	emailToken, err := s.emailTokenRepo.FindByToken(token)
+	if err != nil {
+		return ErrInvalidToken
+	}
+
+	if err := s.repo.MarkEmailVerified(emailToken.UserID); err != nil {
+		return err
+	}
+
+	if err := s.emailTokenRepo.MarkUsed(emailToken.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var ErrEmailAlready = errors.New("email already verified")
+
+func (s *UserService) ResendVerificationEmail(userID uuid.UUID) error {
+	user, err := s.repo.FindByID(userID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	if user.EmailVerified {
+		return ErrEmailAlready
+	}
+
+	emailVerToken := &models.EmailVerificationToken{
+		UserID:    user.ID,
+		Token:     uuid.New().String(),
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	if err := s.emailTokenRepo.Create(emailVerToken); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UserService) RequestPasswordReset(email string) error {
+	user, err := s.repo.FindByEmail(email)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	latest, err := s.passwordResetRepo.FindLatestByUser(user.ID)
+	if err == nil && latest != nil && !latest.Used && latest.ExpiresAt.After(time.Now()) {
+		return nil
+	}
+
+	passwordResetToken := &models.PasswordResetToken{
+		UserID:    user.ID,
+		Token:     uuid.New().String(),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+
+	if err := s.passwordResetRepo.Create(passwordResetToken); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) ConfirmPasswordReset(token, newPassword string) error {
+	prt, err := s.passwordResetRepo.FindByToken(token)
+	if err != nil {
+		return ErrInvalidToken
+	}
+	user, err := s.repo.FindByID(prt.UserID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+	hash, err := hashedPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	user.PasswordHash = hash
+	if err := s.repo.UpdatePassword(user); err != nil {
+		return err
+	}
+	if err := s.passwordResetRepo.MarkUsed(prt.ID); err != nil {
 		return err
 	}
 	return nil
