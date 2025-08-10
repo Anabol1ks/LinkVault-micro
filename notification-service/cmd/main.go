@@ -1,12 +1,19 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"notification-service/config"
+	"notification-service/internal/consumer"
 	"notification-service/internal/sender"
 	"notification-service/pkg/logger"
-	"os"
 
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -15,13 +22,35 @@ func main() {
 	if err := logger.Init(isDev); err != nil {
 		panic(err)
 	}
-
 	defer logger.Sync()
-
 	log := logger.L()
-
 	cfg := config.Load(log)
-
 	emailSender := sender.NewEmailSender(cfg)
-	_ = emailSender
+
+	if len(cfg.KafkaBrokers) == 0 {
+		log.Fatal("no kafka brokers configured (KAFKA_BROKERS)")
+	}
+
+	cons := consumer.NewKafkaEmailConsumer(cfg.KafkaBrokers, cfg.KafkaGroupID, cfg.KafkaTopic, emailSender, log)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		if err := cons.Run(ctx); err != nil {
+			log.Error("consumer stopped", zap.Error(err))
+		}
+	}()
+
+	// Graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+	log.Info("shutdown signal received")
+	cancel()
+	_ = cons.Close()
+	time.Sleep(200 * time.Millisecond)
 }
+
+// loggerErr helper to avoid nil field creation duplication
+func loggerErr(err error) (key string, value any) { return "error", err }

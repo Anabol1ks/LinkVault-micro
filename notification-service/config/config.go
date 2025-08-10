@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -15,17 +16,25 @@ type Config struct {
 	SMTPFrom     string
 
 	TMPLDir string
+
+	KafkaBrokers []string
+	KafkaGroupID string
+	KafkaTopic   string
 }
 
 func Load(log *zap.Logger) *Config {
-	return &Config{
+	c := &Config{
 		SMTPHost:     getEnv("SMTP_HOST", log),
 		SMTPPort:     getEnvInt("SMTP_PORT", log),
 		SMTPUser:     getEnv("SMTP_USER", log),
 		SMTPPassword: getEnv("SMTP_PASSWORD", log),
 		SMTPFrom:     getEnv("SMTP_FROM", log),
 		TMPLDir:      getEnv("TMPL_DIR", log),
+		KafkaBrokers: splitAndTrim(os.Getenv("KAFKA_BROKERS")),
+		KafkaGroupID: getEnv("KAFKA_GROUP_ID", log),
+		KafkaTopic:   getEnv("KAFKA_TOPIC_EMAIL", log),
 	}
+	return c
 }
 
 func getEnv(key string, log *zap.Logger) string {
@@ -44,4 +53,18 @@ func getEnvInt(key string, log *zap.Logger) int {
 		panic("invalid int value for environment variable: " + key)
 	}
 	return val
+}
+
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := []string{}
+	for _, p := range strings.Split(s, ",") {
+		pt := strings.TrimSpace(p)
+		if pt != "" {
+			parts = append(parts, pt)
+		}
+	}
+	return parts
 }
