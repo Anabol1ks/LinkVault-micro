@@ -1,0 +1,14 @@
+services:
+  notification-service:
+    build: .
+    container_name: notification-service
+    env_file:
+      - .env
+    volumes:
+      - ./internal/sender/templates:/app/internal/sender/templates:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "pgrep linkvault-notification >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

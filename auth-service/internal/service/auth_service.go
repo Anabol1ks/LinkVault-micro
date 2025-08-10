@@ -5,6 +5,7 @@ import (
 	"linkv-auth/config"
 	"linkv-auth/internal/jwt"
 	"linkv-auth/internal/models"
+	"linkv-auth/internal/producer"
 	"linkv-auth/internal/repository"
 	"time"
 
@@ -67,6 +68,16 @@ func (s *UserService) Register(name, email, password string) (*models.User, erro
 	if err := s.emailTokenRepo.Create(emailVerToken); err != nil {
 		return nil, err
 	}
+
+	_ = producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+		To:       user.Email,
+		Subject:  "Подтвердите email",
+		Template: "verify_email",
+		Data: map[string]any{
+			"UserName":   user.Name,
+			"ConfirmURL": "https://app/confirm?token=" + emailVerToken.Token,
+		},
+	})
 
 	return user, nil
 }
@@ -204,6 +215,18 @@ func (s *UserService) ResendVerificationEmail(userID uuid.UUID) error {
 	if err := s.emailTokenRepo.Create(emailVerToken); err != nil {
 		return err
 	}
+
+	if err := producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+		To:       user.Email,
+		Subject:  "Подтвердите email",
+		Template: "verify_email",
+		Data: map[string]any{
+			"UserName":   user.Name,
+			"ConfirmURL": "https://app/confirm?token=" + emailVerToken.Token,
+		},
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -221,10 +244,22 @@ func (s *UserService) RequestPasswordReset(email string) error {
 	passwordResetToken := &models.PasswordResetToken{
 		UserID:    user.ID,
 		Token:     uuid.New().String(),
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		ExpiresAt: time.Now().Add(30 * time.Minute),
 	}
 
 	if err := s.passwordResetRepo.Create(passwordResetToken); err != nil {
+		return err
+	}
+	if err := producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+		To:       user.Email,
+		Subject:  "Сброс пароля",
+		Template: "reset_password",
+		Data: map[string]any{
+			"UserName":      user.Name,
+			"ResetURL":      "https://app/confirm?token=" + passwordResetToken.Token,
+			"ExpireMinutes": "30",
+		},
+	}); err != nil {
 		return err
 	}
 

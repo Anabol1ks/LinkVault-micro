@@ -10,15 +10,15 @@ services:
     ports:
       - "5432:5432"
 
-  # auth-service:
-  #   build: .
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "8081:8081"
-  #   depends_on:
-  #     - auth-db
-  #   restart: unless-stopped
+  auth-service:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - auth-db
+    restart: unless-stopped
 
 volumes:
   db_data:
