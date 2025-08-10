@@ -59,7 +59,7 @@ func main() {
 
 	userService := service.NewUserService(userRepo, refreshTokenRepo, emailTokenRepo, passwordResetRepo, cfg)
 
-	scheduler := maintenance.NewScheduler(log, refreshTokenRepo)
+	scheduler := maintenance.NewScheduler(log, refreshTokenRepo, emailTokenRepo, passwordResetRepo)
 	appCtx, cancelScheduler := context.WithCancel(context.Background())
 	if err := scheduler.Start(appCtx); err != nil {
 		log.Error("Не удалось запустить планировщик", zap.Error(err))
