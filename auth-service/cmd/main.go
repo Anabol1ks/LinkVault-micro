@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"linkv-auth/config"
-	_ "linkv-auth/docs"
 	"linkv-auth/internal/maintenance"
+	"linkv-auth/internal/producer"
 	"linkv-auth/internal/repository"
 	"linkv-auth/internal/service"
 	"linkv-auth/internal/storage"
@@ -52,12 +52,15 @@ func main() {
 
 	storage.Migrate(db, log)
 
+	emailProducer := producer.NewEmailProducer(cfg.KafkaBrokers, cfg.KafkaTopic)
+	defer emailProducer.Close()
+
 	userRepo := repository.NewUserRepository(db)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 	emailTokenRepo := repository.NewEmailVerificationTokenRepository(db)
 	passwordResetRepo := repository.NewPasswordResetTokenRepository(db)
 
-	userService := service.NewUserService(userRepo, refreshTokenRepo, emailTokenRepo, passwordResetRepo, cfg)
+	userService := service.NewUserService(userRepo, refreshTokenRepo, emailTokenRepo, passwordResetRepo, cfg, emailProducer, log)
 
 	scheduler := maintenance.NewScheduler(log, refreshTokenRepo, emailTokenRepo, passwordResetRepo)
 	appCtx, cancelScheduler := context.WithCancel(context.Background())

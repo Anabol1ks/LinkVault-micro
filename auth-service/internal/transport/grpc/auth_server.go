@@ -17,30 +17,28 @@ import (
 type AuthServer struct {
 	authv1.UnimplementedAuthServiceServer
 	userService *service.UserService
-	log         *zap.Logger
 }
 
 func NewAuthServer(userService *service.UserService, log *zap.Logger) *AuthServer {
 	return &AuthServer{
 		userService: userService,
-		log:         log,
 	}
 }
 
 func (s *AuthServer) Register(ctx context.Context, req *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
-	s.log.Info("start", zap.String("op", "Register"))
+	s.userService.Log.Info("start", zap.String("op", "Register"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "Register"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "Register"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	user, err := s.userService.Register(req.Name, req.Email, req.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrUserExists):
-			s.log.Warn("failed", zap.String("op", "Register"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "Register"), zap.Error(err))
 			return nil, status.Errorf(codes.AlreadyExists, "user already exists: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "Register"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "Register"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -52,22 +50,22 @@ func (s *AuthServer) Register(ctx context.Context, req *authv1.RegisterRequest) 
 }
 
 func (s *AuthServer) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.TokenPair, error) {
-	s.log.Info("start", zap.String("op", "Login"))
+	s.userService.Log.Info("start", zap.String("op", "Login"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	access, refresh, err := s.userService.Login(req.Email, req.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrUserNotFound):
-			s.log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
 			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 		case errors.Is(err, service.ErrInvalidPassword):
-			s.log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "Login"), zap.Error(err))
 			return nil, status.Errorf(codes.Unauthenticated, "invalid password: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "Login"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "Login"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -79,19 +77,19 @@ func (s *AuthServer) Login(ctx context.Context, req *authv1.LoginRequest) (*auth
 }
 
 func (s *AuthServer) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*authv1.TokenPair, error) {
-	s.log.Info("start", zap.String("op", "Refresh"))
+	s.userService.Log.Info("start", zap.String("op", "Refresh"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "Refresh"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "Refresh"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	access, refresh, err := s.userService.Refresh(req.RefreshToken)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidToken):
-			s.log.Warn("failed", zap.String("op", "Refresh"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "Refresh"), zap.Error(err))
 			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "Refresh"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "Refresh"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -102,15 +100,15 @@ func (s *AuthServer) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*
 }
 
 func (s *AuthServer) GetProfile(ctx context.Context, _ *authv1.GetProfileRequest) (*authv1.UserProfile, error) {
-	s.log.Info("start", zap.String("op", "Profile"))
+	s.userService.Log.Info("start", zap.String("op", "Profile"))
 	userID, ok := ctx.Value("user_id").(uuid.UUID)
 	if !ok {
-		s.log.Warn("failed", zap.String("op", "Profile"), zap.Error(errors.New("user_id not found in context")))
+		s.userService.Log.Warn("failed", zap.String("op", "Profile"), zap.Error(errors.New("user_id not found in context")))
 		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
 	}
 	user, err := s.userService.Profile(userID)
 	if err != nil {
-		s.log.Warn("failed", zap.String("op", "Profile"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "Profile"), zap.Error(err))
 		return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 	}
 	return &authv1.UserProfile{
@@ -121,17 +119,17 @@ func (s *AuthServer) GetProfile(ctx context.Context, _ *authv1.GetProfileRequest
 }
 
 func (s *AuthServer) Logout(ctx context.Context, req *authv1.LogoutRequest) (*emptypb.Empty, error) {
-	s.log.Info("start", zap.String("op", "Logout"))
+	s.userService.Log.Info("start", zap.String("op", "Logout"))
 	userID, ok := ctx.Value("user_id").(uuid.UUID)
 	if !ok {
-		s.log.Warn("failed", zap.String("op", "Logout"), zap.Error(errors.New("user_id not found in context")))
+		s.userService.Log.Warn("failed", zap.String("op", "Logout"), zap.Error(errors.New("user_id not found in context")))
 		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
 	}
 	if err := s.userService.Logout(userID); err != nil {
-		s.log.Error("failed", zap.String("op", "Logout"), zap.Error(err))
+		s.userService.Log.Error("failed", zap.String("op", "Logout"), zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 	}
-	s.log.Info("success", zap.String("op", "Logout"))
+	s.userService.Log.Info("success", zap.String("op", "Logout"))
 	return &emptypb.Empty{}, nil
 }
 
@@ -149,18 +147,18 @@ func (s *AuthServer) ValidateAccessToken(ctx context.Context, req *authv1.Valida
 }
 
 func (s *AuthServer) VerifyEmail(ctx context.Context, req *authv1.VerifyEmailRequest) (*emptypb.Empty, error) {
-	s.log.Info("start", zap.String("op", "VerifyEmail"))
+	s.userService.Log.Info("start", zap.String("op", "VerifyEmail"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	if err := s.userService.VerifyEmail(req.Token); err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidToken):
-			s.log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
 			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "VerifyEmail"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -168,22 +166,22 @@ func (s *AuthServer) VerifyEmail(ctx context.Context, req *authv1.VerifyEmailReq
 }
 
 func (s *AuthServer) ResendVerificationEmail(ctx context.Context, _ *authv1.ResendVerificationEmailRequest) (*emptypb.Empty, error) {
-	s.log.Info("start", zap.String("op", "ResendVerificationEmail"))
+	s.userService.Log.Info("start", zap.String("op", "ResendVerificationEmail"))
 	userID, ok := ctx.Value("user_id").(uuid.UUID)
 	if !ok {
-		s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(errors.New("user_id not found in context")))
+		s.userService.Log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(errors.New("user_id not found in context")))
 		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
 	}
 	if err := s.userService.ResendVerificationEmail(userID); err != nil {
 		switch {
 		case errors.Is(err, service.ErrUserNotFound):
-			s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
 			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 		case errors.Is(err, service.ErrEmailAlready):
-			s.log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
 			return nil, status.Errorf(codes.AlreadyExists, "email already verified: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "ResendVerificationEmail"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -191,18 +189,18 @@ func (s *AuthServer) ResendVerificationEmail(ctx context.Context, _ *authv1.Rese
 }
 
 func (s *AuthServer) RequestPasswordReset(ctx context.Context, req *authv1.RequestPasswordResetRequest) (*emptypb.Empty, error) {
-	s.log.Info("start", zap.String("op", "RequestPasswordReset"))
+	s.userService.Log.Info("start", zap.String("op", "RequestPasswordReset"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	if err := s.userService.RequestPasswordReset(req.Email); err != nil {
 		switch {
 		case errors.Is(err, service.ErrUserNotFound):
-			s.log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
 			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "RequestPasswordReset"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}
@@ -210,21 +208,21 @@ func (s *AuthServer) RequestPasswordReset(ctx context.Context, req *authv1.Reque
 }
 
 func (s *AuthServer) ConfirmPasswordReset(ctx context.Context, req *authv1.ConfirmPasswordResetRequest) (*emptypb.Empty, error) {
-	s.log.Info("start", zap.String("op", "ConfirmPasswordReset"))
+	s.userService.Log.Info("start", zap.String("op", "ConfirmPasswordReset"))
 	if err := req.Validate(); err != nil {
-		s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+		s.userService.Log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
 	}
 	if err := s.userService.ConfirmPasswordReset(req.Token, req.NewPassword); err != nil {
 		switch {
 		case errors.Is(err, service.ErrInvalidToken):
-			s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
 			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
 		case errors.Is(err, service.ErrUserNotFound):
-			s.log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			s.userService.Log.Warn("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
 			return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 		default:
-			s.log.Error("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
+			s.userService.Log.Error("failed", zap.String("op", "ConfirmPasswordReset"), zap.Error(err))
 			return nil, status.Errorf(codes.Internal, "internal server error: %v", err)
 		}
 	}

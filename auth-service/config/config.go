@@ -15,7 +15,6 @@ type Config struct {
 	DB   DBConfig
 
 	KafkaBrokers []string
-	KafkaGroupID string
 	KafkaTopic   string
 }
 
@@ -54,7 +53,6 @@ func Load(log *zap.Logger) *Config {
 		},
 
 		KafkaBrokers: splitAndTrim(os.Getenv("KAFKA_BROKERS")),
-		KafkaGroupID: getEnv("KAFKA_GROUP_ID", log),
 		KafkaTopic:   getEnv("KAFKA_TOPIC_EMAIL", log),
 	}
 }

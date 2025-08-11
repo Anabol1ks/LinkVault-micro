@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,6 +22,8 @@ type UserService struct {
 	emailTokenRepo    *repository.EmailVerificationTokenRepository
 	passwordResetRepo *repository.PasswordResetTokenRepository
 	Cfg               *config.Config
+	emailProducer     *producer.EmailProducer
+	Log               *zap.Logger
 }
 
 func NewUserService(
@@ -29,6 +32,8 @@ func NewUserService(
 	emailTokenRepo *repository.EmailVerificationTokenRepository,
 	passwordResetRepo *repository.PasswordResetTokenRepository,
 	cfg *config.Config,
+	emailProducer *producer.EmailProducer,
+	log *zap.Logger,
 ) *UserService {
 	return &UserService{
 		repo:              repo,
@@ -36,6 +41,8 @@ func NewUserService(
 		emailTokenRepo:    emailTokenRepo,
 		passwordResetRepo: passwordResetRepo,
 		Cfg:               cfg,
+		emailProducer:     emailProducer,
+		Log:               log,
 	}
 }
 
@@ -69,7 +76,7 @@ func (s *UserService) Register(name, email, password string) (*models.User, erro
 		return nil, err
 	}
 
-	_ = producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+	err = s.emailProducer.SendEmail(user.Email, producer.EmailMessage{
 		To:       user.Email,
 		Subject:  "Подтвердите email",
 		Template: "verify_email",
@@ -78,6 +85,9 @@ func (s *UserService) Register(name, email, password string) (*models.User, erro
 			"ConfirmURL": "https://app/confirm?token=" + emailVerToken.Token,
 		},
 	})
+	if err != nil {
+		s.Log.Warn("Не удалось отправить email через Kafka", zap.Error(err))
+	}
 
 	return user, nil
 }
@@ -216,7 +226,7 @@ func (s *UserService) ResendVerificationEmail(userID uuid.UUID) error {
 		return err
 	}
 
-	if err := producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+	if err := s.emailProducer.SendEmail(user.Email, producer.EmailMessage{
 		To:       user.Email,
 		Subject:  "Подтвердите email",
 		Template: "verify_email",
@@ -250,7 +260,7 @@ func (s *UserService) RequestPasswordReset(email string) error {
 	if err := s.passwordResetRepo.Create(passwordResetToken); err != nil {
 		return err
 	}
-	if err := producer.SendEmailKafka(s.Cfg.KafkaBrokers, s.Cfg.KafkaTopic, producer.EmailMessage{
+	if err := s.emailProducer.SendEmail(user.Email, producer.EmailMessage{
 		To:       user.Email,
 		Subject:  "Сброс пароля",
 		Template: "reset_password",
