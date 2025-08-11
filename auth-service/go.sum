@@ -1,3 +1,13 @@
+github.com/Anabol1ks/linkvault-proto v0.1.1 h1:YjctfPGWmhekk6wWN7xnpexa41QnJmgLYsbwDMKeDfs=
+github.com/Anabol1ks/linkvault-proto v0.1.1/go.mod h1:FB4sDvIPL+lksvj7cSm5hwaXB/aNG//sQhWYqZryLcc=
+github.com/Anabol1ks/linkvault-proto v0.1.2 h1:MPDvo31xEbP9TVRIs55Jx3k6a3WQv/wickF33ubPEuI=
+github.com/Anabol1ks/linkvault-proto v0.1.2/go.mod h1:FB4sDvIPL+lksvj7cSm5hwaXB/aNG//sQhWYqZryLcc=
+github.com/Anabol1ks/linkvault-proto v0.1.21 h1:y7EzL9hLNS2QuiGjo6+NHcVl7WzIzmWd8IOkKKMXlzA=
+github.com/Anabol1ks/linkvault-proto v0.1.21/go.mod h1:FB4sDvIPL+lksvj7cSm5hwaXB/aNG//sQhWYqZryLcc=
+github.com/Anabol1ks/linkvault-proto v0.1.22 h1:RdeeXHF8qu+OreL5yd0ZIR78QiH0A82OuPtsKFZo9kY=
+github.com/Anabol1ks/linkvault-proto v0.1.22/go.mod h1:FB4sDvIPL+lksvj7cSm5hwaXB/aNG//sQhWYqZryLcc=
+github.com/Anabol1ks/linkvault-proto v0.1.23 h1:ChzClmJNR0uFAH8c/UOXA0eR8W1TixWRZRGfb5ZjXyk=
+github.com/Anabol1ks/linkvault-proto v0.1.23/go.mod h1:FB4sDvIPL+lksvj7cSm5hwaXB/aNG//sQhWYqZryLcc=
 github.com/bytedance/sonic v1.13.3 h1:MS8gmaH16Gtirygw7jV91pDCN33NyMrPbN7qiYhEsF0=
 github.com/bytedance/sonic v1.13.3/go.mod h1:o68xyaF9u2gvVBuGHPlUVCy+ZfmNNO5ETf1+KgkJhz4=
 github.com/bytedance/sonic/loader v0.1.1/go.mod h1:ncP89zfokxS5LZrJxl5z0UJcsk4M4yY2JpfqGeCtNLU=

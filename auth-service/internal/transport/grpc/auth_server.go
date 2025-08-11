@@ -1,11 +1,12 @@
 package grpc
 
 import (
-	authv1 "auth-service/api/proto/auth/v1"
 	"auth-service/internal/jwt"
 	"auth-service/internal/service"
 	"context"
 	"errors"
+
+	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -134,12 +135,15 @@ func (s *AuthServer) Logout(ctx context.Context, req *authv1.LogoutRequest) (*em
 }
 
 func (s *AuthServer) ValidateAccessToken(ctx context.Context, req *authv1.ValidateAccessTokenRequest) (*authv1.ValidateAccessTokenResponse, error) {
+	s.userService.Log.Info("start", zap.String("op", "ValidateAccessToken"))
 	claims, err := jwt.ParseAccessToken(req.AccessToken, s.userService.Cfg.JWT.Access)
 	if err != nil {
+		s.userService.Log.Warn("failed", zap.String("op", "ValidateAccessToken"), zap.Error(err))
 		return &authv1.ValidateAccessTokenResponse{
 			Valid: false,
 		}, nil
 	}
+	s.userService.Log.Info("success", zap.String("op", "ValidateAccessToken"))
 	return &authv1.ValidateAccessTokenResponse{
 		UserId: claims.UserID,
 		Valid:  true,

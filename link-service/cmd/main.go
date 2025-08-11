@@ -1,8 +1,6 @@
 package main
 
 import (
-	authv1 "auth-service/api/proto/auth/v1"
-	linkv1 "link-service/api/proto/link/v1"
 	"link-service/config"
 	"link-service/internal/repository"
 	"link-service/internal/service"
@@ -13,6 +11,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
+	linkv1 "github.com/Anabol1ks/linkvault-proto/link/v1"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/joho/godotenv"
@@ -48,6 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal("auth connect error", zap.Error(err))
 	}
+	log.Info("auth connected")
 	defer authConn.Close()
 
 	shortLinkRepo := repository.NewShortLinkRepository(db)

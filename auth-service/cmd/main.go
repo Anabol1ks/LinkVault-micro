@@ -14,8 +14,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	authv1 "auth-service/api/proto/auth/v1"
 	grpcserver "auth-service/internal/transport/grpc"
+
+	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"

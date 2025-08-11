@@ -1,9 +1,12 @@
 package grpc
 
 import (
-	authv1 "auth-service/api/proto/auth/v1"
 	"context"
+	"fmt"
 	"strings"
+
+	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
+	"github.com/google/uuid"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -38,7 +41,11 @@ func AuthInterceptor(authClient authv1.AuthServiceClient) grpc.UnaryServerInterc
 			return nil, status.Error(codes.Unauthenticated, "invalid token")
 		}
 
-		ctx = context.WithValue(ctx, "user_id", resp.UserId)
+		userID, err := uuid.Parse(resp.UserId)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, "invalid user_id in token")
+		}
+		ctx = context.WithValue(ctx, "user_id", userID)
 		return handler(ctx, req)
 	}
 }
@@ -50,20 +57,31 @@ func OptionalAuthInterceptor(authClient authv1.AuthServiceClient) grpc.UnaryServ
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
+		fmt.Println("[OptionalAuthInterceptor] info.FullMethod:", info.FullMethod)
 		if !authOptionalMethods[info.FullMethod] {
 			return handler(ctx, req)
 		}
 		md, _ := metadata.FromIncomingContext(ctx)
+		fmt.Printf("[OptionalAuthInterceptor] metadata: %+v\n", md)
 		authHeaders := md.Get("authorization")
+		fmt.Printf("[OptionalAuthInterceptor] authHeaders: %+v\n", authHeaders)
 		if len(authHeaders) > 0 && strings.HasPrefix(authHeaders[0], "Bearer ") {
 			tokenStr := strings.TrimPrefix(authHeaders[0], "Bearer ")
+			fmt.Println("Calling ValidateAccessToken with token: ", tokenStr)
 			resp, err := authClient.ValidateAccessToken(ctx, &authv1.ValidateAccessTokenRequest{
 				AccessToken: tokenStr,
 			})
 			if err == nil && resp.Valid {
-				ctx = context.WithValue(ctx, "user_id", resp.UserId)
+				userID, err := uuid.Parse(resp.UserId)
+				if err != nil {
+					return nil, status.Error(codes.Unauthenticated, "invalid user_id in token")
+				}
+				fmt.Println("[AuthInterceptor] user_id extracted from token:", userID)
+
+				ctx = context.WithValue(ctx, "user_id", userID)
 			}
 		}
+		fmt.Println("[OptionalAuthInterceptor] handler called")
 		return handler(ctx, req)
 	}
 }
@@ -71,5 +89,5 @@ func OptionalAuthInterceptor(authClient authv1.AuthServiceClient) grpc.UnaryServ
 var authRequiredMethods = map[string]bool{}
 
 var authOptionalMethods = map[string]bool{
-	"/link.v1.LinkServer/CreateShortLink": true,
+	"/link.v1.LinkService/CreateShortLink": true,
 }
