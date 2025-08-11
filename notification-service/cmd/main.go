@@ -51,6 +51,3 @@ func main() {
 	_ = cons.Close()
 	time.Sleep(200 * time.Millisecond)
 }
-
-// loggerErr helper to avoid nil field creation duplication
-func loggerErr(err error) (key string, value any) { return "error", err }
