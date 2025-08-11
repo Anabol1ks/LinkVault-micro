@@ -1,8 +1,8 @@
 package jwt
 
 import (
+	"auth-service/config"
 	"errors"
-	"linkv-auth/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

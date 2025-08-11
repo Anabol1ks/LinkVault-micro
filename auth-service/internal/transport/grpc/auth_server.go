@@ -1,11 +1,11 @@
 package grpc
 
 import (
+	authv1 "auth-service/api/proto/auth/v1"
+	"auth-service/internal/jwt"
+	"auth-service/internal/service"
 	"context"
 	"errors"
-	authv1 "linkv-auth/api/proto/auth/v1"
-	"linkv-auth/internal/jwt"
-	"linkv-auth/internal/service"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"

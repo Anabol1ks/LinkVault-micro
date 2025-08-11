@@ -1,21 +1,21 @@
 package main
 
 import (
+	"auth-service/config"
+	"auth-service/internal/maintenance"
+	"auth-service/internal/producer"
+	"auth-service/internal/repository"
+	"auth-service/internal/service"
+	"auth-service/internal/storage"
+	"auth-service/pkg/logger"
 	"context"
-	"linkv-auth/config"
-	"linkv-auth/internal/maintenance"
-	"linkv-auth/internal/producer"
-	"linkv-auth/internal/repository"
-	"linkv-auth/internal/service"
-	"linkv-auth/internal/storage"
-	"linkv-auth/pkg/logger"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	authv1 "linkv-auth/api/proto/auth/v1"
-	grpcserver "linkv-auth/internal/transport/grpc"
+	authv1 "auth-service/api/proto/auth/v1"
+	grpcserver "auth-service/internal/transport/grpc"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"

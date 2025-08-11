@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"linkv-auth/internal/models"
+	"auth-service/internal/models"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

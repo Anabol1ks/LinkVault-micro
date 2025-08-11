@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"linkv-auth/internal/repository"
+	"auth-service/internal/repository"
 
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"

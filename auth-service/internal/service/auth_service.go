@@ -1,12 +1,12 @@
 package service
 
 import (
+	"auth-service/config"
+	"auth-service/internal/jwt"
+	"auth-service/internal/models"
+	"auth-service/internal/producer"
+	"auth-service/internal/repository"
 	"errors"
-	"linkv-auth/config"
-	"linkv-auth/internal/jwt"
-	"linkv-auth/internal/models"
-	"linkv-auth/internal/producer"
-	"linkv-auth/internal/repository"
 	"time"
 
 	"github.com/google/uuid"

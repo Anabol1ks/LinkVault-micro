@@ -746,7 +746,7 @@ const file_api_proto_auth_v1_auth_proto_rawDesc = "" +
 	"\vVerifyEmail\x12\x1b.auth.v1.VerifyEmailRequest\x1a\x16.google.protobuf.Empty\x12Z\n" +
 	"\x17ResendVerificationEmail\x12'.auth.v1.ResendVerificationEmailRequest\x1a\x16.google.protobuf.Empty\x12T\n" +
 	"\x14RequestPasswordReset\x12$.auth.v1.RequestPasswordResetRequest\x1a\x16.google.protobuf.Empty\x12T\n" +
-	"\x14ConfirmPasswordReset\x12$.auth.v1.ConfirmPasswordResetRequest\x1a\x16.google.protobuf.EmptyB%Z#linkv-auth/api/proto/auth/v1;authv1b\x06proto3"
+	"\x14ConfirmPasswordReset\x12$.auth.v1.ConfirmPasswordResetRequest\x1a\x16.google.protobuf.EmptyB'Z%auth-service/api/proto/auth/v1;authv1b\x06proto3"
 
 var (
 	file_api_proto_auth_v1_auth_proto_rawDescOnce sync.Once

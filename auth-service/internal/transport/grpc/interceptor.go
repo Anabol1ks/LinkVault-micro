@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"linkv-auth/config"
-	"linkv-auth/internal/jwt"
+	"auth-service/config"
+	"auth-service/internal/jwt"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"

@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package auth.v1;
 
-option go_package = "linkv-auth/api/proto/auth/v1;authv1";
+option go_package = "auth-service/api/proto/auth/v1;authv1";
 
 import "google/protobuf/empty.proto";
-// import "validate/validate.proto";
+import "validate/validate.proto";
 
 service AuthService {
   rpc Register (RegisterRequest) returns (RegisterResponse);

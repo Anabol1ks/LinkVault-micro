@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"linkv-auth/internal/models"
+	"auth-service/internal/models"
 	"time"
 
 	"github.com/google/uuid"

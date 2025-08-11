@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"linkv-auth/config"
-	"linkv-auth/internal/jwt"
+	"auth-service/config"
+	"auth-service/internal/jwt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
