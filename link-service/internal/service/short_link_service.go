@@ -68,16 +68,7 @@ func generateShortCode() (string, error) {
 	return id, nil
 }
 
-func (s *ShortLinkService) GetOriginalURL(shortCode string) (string, error) {
-	url, err := s.repo.GetOriginalURL(shortCode)
-	if err != nil {
-		s.Log.Warn("Short link not found or inactive/expired", zap.String("shortCode", shortCode), zap.Error(err))
-		return "", err
-	}
-	return url, nil
-}
-
-func (s *ShortLinkService) GetShortLinkByCode(shortCode string) (*models.ShortLink, error) {
+func (s *ShortLinkService) GetLinkByCode(shortCode string) (*models.ShortLink, error) {
 	var shortLink models.ShortLink
 	err := s.repo.GetByShortCode(&shortLink, shortCode)
 	if err != nil {

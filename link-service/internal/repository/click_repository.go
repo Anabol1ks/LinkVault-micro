@@ -20,7 +20,7 @@ func (r *ClickRepository) Create(click *models.Click) error {
 	return r.db.Create(click).Error
 }
 
-func (r *ClickRepository) GetByShortLinkID(shortLinkID string) ([]models.Click, error) {
+func (r *ClickRepository) GetClicksByShortLinkID(shortLinkID string) ([]models.Click, error) {
 	var clicks []models.Click
 	err := r.db.Where("short_link_id = ?", shortLinkID).Find(&clicks).Error
 	return clicks, err

@@ -55,6 +55,9 @@ func main() {
 	shortLinkRepo := repository.NewShortLinkRepository(db)
 	shortLinkService := service.NewShortLinkService(shortLinkRepo, log)
 
+	clickRepo := repository.NewClickRepository(db)
+	clickService := service.NewClickService(clickRepo, log)
+
 	lis, err := net.Listen("tcp", cfg.Port)
 	if err != nil {
 		log.Fatal("failed to listen", zap.Error(err))
@@ -75,7 +78,7 @@ func main() {
 
 	reflection.Register(grpcServer)
 
-	linkv1.RegisterLinkServiceServer(grpcServer, grpcserver.NewLinkServer(shortLinkService, cfg))
+	linkv1.RegisterLinkServiceServer(grpcServer, grpcserver.NewLinkServer(shortLinkService, clickService, cfg))
 
 	go func() {
 		log.Info("Starting gRPC server", zap.String("addr", cfg.Port))

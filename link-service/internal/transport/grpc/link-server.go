@@ -13,18 +13,21 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 type LinkServer struct {
 	linkv1.UnimplementedLinkServiceServer
 	shortService *service.ShortLinkService
+	clickService *service.ClickService
 	cfg          *config.Config
 }
 
-func NewLinkServer(shortService *service.ShortLinkService, cfg *config.Config) *LinkServer {
+func NewLinkServer(shortService *service.ShortLinkService, clickService *service.ClickService, cfg *config.Config) *LinkServer {
 	return &LinkServer{
 		shortService: shortService,
+		clickService: clickService,
 		cfg:          cfg,
 	}
 }
@@ -93,4 +96,37 @@ func (s *LinkServer) CreateShortLink(ctx context.Context, req *linkv1.CreateShor
 	}
 
 	return resp, nil
+}
+
+func (s *LinkServer) RedirectLink(ctx context.Context, req *linkv1.RedirectLinkRequest) (*linkv1.RedirectLinkResponse, error) {
+	s.shortService.Log.Info("start", zap.String("op", "RedirectLink"))
+	if err := req.Validate(); err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "RedirectLink"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
+	shortLink, err := s.shortService.GetLinkByCode(req.ShortCode)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "short link not found")
+	}
+	originalURL := shortLink.OriginalURL
+
+	var ip, userAgent string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if vals := md.Get("x-forwarded-for"); len(vals) > 0 {
+			ip = vals[0]
+		}
+		if vals := md.Get("user-agent"); len(vals) > 0 {
+			userAgent = vals[0]
+		}
+	}
+	if shortLink.UserID != nil {
+		go func() {
+			_ = s.clickService.CreateClick(shortLink.ID, ip, userAgent)
+		}()
+	}
+
+	return &linkv1.RedirectLinkResponse{
+		OriginalUrl: originalURL,
+	}, nil
 }
