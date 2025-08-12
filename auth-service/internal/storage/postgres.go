@@ -1,8 +1,8 @@
 package storage
 
 import (
+	"auth-service/config"
 	"fmt"
-	"linkv-auth/config"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"

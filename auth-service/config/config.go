@@ -13,6 +13,9 @@ type Config struct {
 	Port string
 	JWT  JWTConfig
 	DB   DBConfig
+
+	KafkaBrokers []string
+	KafkaTopic   string
 }
 
 type JWTConfig struct {
@@ -48,6 +51,9 @@ func Load(log *zap.Logger) *Config {
 			Refresh:    getEnv("REFRESH_SECRET", log),
 			RefreshExp: parseDurationWithDays(getEnv("REFRESH_EXP", log)),
 		},
+
+		KafkaBrokers: splitAndTrim(os.Getenv("KAFKA_BROKERS")),
+		KafkaTopic:   getEnv("KAFKA_TOPIC_EMAIL", log),
 	}
 }
 
@@ -75,4 +81,18 @@ func parseDurationWithDays(s string) time.Duration {
 		return 0
 	}
 	return duration
+}
+
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := []string{}
+	for _, p := range strings.Split(s, ",") {
+		pt := strings.TrimSpace(p)
+		if pt != "" {
+			parts = append(parts, pt)
+		}
+	}
+	return parts
 }

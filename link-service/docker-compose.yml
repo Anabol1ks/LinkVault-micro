@@ -1,0 +1,14 @@
+services:
+  link-db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: link-db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+
+volumes:
+  db_data:

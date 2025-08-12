@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"linkv-auth/internal/models"
+	"auth-service/internal/models"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -11,6 +11,8 @@ func Migrate(db *gorm.DB, log *zap.Logger) {
 	if err := db.AutoMigrate(
 		&models.User{},
 		&models.RefreshToken{},
+		&models.EmailVerificationToken{},
+		&models.PasswordResetToken{},
 	); err != nil {
 		log.Fatal("Не удалось выполнить миграцию базы данных", zap.Error(err))
 	}

@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"linkv-auth/internal/models"
+	"auth-service/internal/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
