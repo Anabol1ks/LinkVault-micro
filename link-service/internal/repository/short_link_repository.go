@@ -40,9 +40,9 @@ func (r *ShortLinkRepository) DeactivateByID(id, userID uuid.UUID) error {
 		Update("is_active", false).Error
 }
 
-func (r *ShortLinkRepository) GetByID(id string) (*models.ShortLink, error) {
+func (r *ShortLinkRepository) GetShortLinkByID(id string, userID uuid.UUID) (*models.ShortLink, error) {
 	var shortLink models.ShortLink
-	if err := r.db.Where("id = ? AND is_active = ? AND (expire_at IS NULL OR expire_at > ?)", id, true, time.Now()).First(&shortLink).Error; err != nil {
+	if err := r.db.Where("id = ? AND user_id = ? AND is_active = ? AND (expire_at IS NULL OR expire_at > ?)", id, userID, true, time.Now()).First(&shortLink).Error; err != nil {
 		return nil, err
 	}
 	return &shortLink, nil

@@ -79,7 +79,11 @@ func OptionalAuthInterceptor(authClient authv1.AuthServiceClient) grpc.UnaryServ
 	}
 }
 
-var authRequiredMethods = map[string]bool{}
+var authRequiredMethods = map[string]bool{
+	"/link.v1.LinkService/ListShortLinks":  true,
+	"/link.v1.LinkService/DeleteShortLink": true,
+	"/link.v1.LinkService/GetShortLink":    true,
+}
 
 var authOptionalMethods = map[string]bool{
 	"/link.v1.LinkService/CreateShortLink": true,
