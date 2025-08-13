@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"link-service/config"
+	"link-service/internal/maintenance"
 	"link-service/internal/repository"
 	"link-service/internal/service"
 	"link-service/internal/storage"
@@ -60,6 +62,12 @@ func main() {
 	clickRepo := repository.NewClickRepository(db)
 	clickService := service.NewClickService(clickRepo, log)
 
+	scheduler := maintenance.NewScheduler(log, shortLinkRepo, clickRepo)
+	appCtx, cancelScheduler := context.WithCancel(context.Background())
+	if err := scheduler.Start(appCtx); err != nil {
+		log.Error("Не удалось запустить планировщик", zap.Error(err))
+	}
+
 	var wg sync.WaitGroup
 
 	lis, err := net.Listen("tcp", cfg.Port)
@@ -98,6 +106,7 @@ func main() {
 
 	grpcServer.GracefulStop()
 	wg.Wait()
+	cancelScheduler()
 	storage.CloseDB(db, log)
 	log.Info("Server exiting")
 }
