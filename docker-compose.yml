@@ -25,6 +25,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # api-gateway:
+  #   build: ./api-gateway
+  #   container_name: api-gateway
+  #   depends_on:
+  #     - auth-service
+  #     - link-service
+  #   environment:
+  #     GATEWAY_HTTP_PORT: ":8080"
+  #     AUTH_GRPC_ADDR: "auth-service:8081"
+  #     LINK_GRPC_ADDR: "link-service:8082"
+  #     ACCESS_SECRET: ${ACCESS_SECRET}
+  #   ports:
+  #     - "8080:8080"
+  #   restart: unless-stopped
+
   # rest-proxy:
   #   image: confluentinc/cp-kafka-rest:7.5.0
   #   container_name: kafka-rest-proxy
