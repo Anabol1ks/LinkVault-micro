@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"link-service/config"
+	"link-service/internal/maintenance"
 	"link-service/internal/repository"
 	"link-service/internal/service"
 	"link-service/internal/storage"
@@ -11,6 +13,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"sync"
 
 	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
 	linkv1 "github.com/Anabol1ks/linkvault-proto/link/v1"
@@ -58,6 +62,14 @@ func main() {
 	clickRepo := repository.NewClickRepository(db)
 	clickService := service.NewClickService(clickRepo, log)
 
+	scheduler := maintenance.NewScheduler(log, shortLinkRepo, clickRepo)
+	appCtx, cancelScheduler := context.WithCancel(context.Background())
+	if err := scheduler.Start(appCtx); err != nil {
+		log.Error("Не удалось запустить планировщик", zap.Error(err))
+	}
+
+	var wg sync.WaitGroup
+
 	lis, err := net.Listen("tcp", cfg.Port)
 	if err != nil {
 		log.Fatal("failed to listen", zap.Error(err))
@@ -78,7 +90,7 @@ func main() {
 
 	reflection.Register(grpcServer)
 
-	linkv1.RegisterLinkServiceServer(grpcServer, grpcserver.NewLinkServer(shortLinkService, clickService, cfg))
+	linkv1.RegisterLinkServiceServer(grpcServer, grpcserver.NewLinkServer(shortLinkService, clickService, cfg, &wg))
 
 	go func() {
 		log.Info("Starting gRPC server", zap.String("addr", cfg.Port))
@@ -93,6 +105,8 @@ func main() {
 	log.Info("Shutting down gRPC server...")
 
 	grpcServer.GracefulStop()
+	wg.Wait()
+	cancelScheduler()
 	storage.CloseDB(db, log)
 	log.Info("Server exiting")
 }

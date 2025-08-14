@@ -3,6 +3,7 @@ package repository
 import (
 	"link-service/internal/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -110,4 +111,9 @@ func (c *ClickRepository) GetUniqueCountries(shortLinkID string) ([]string, erro
 		Distinct().
 		Pluck("country", &countries).Error
 	return countries, err
+}
+
+// Удалить клики по short_link_id
+func (r *ClickRepository) DeleteClicksByShortLinkID(id uuid.UUID) error {
+	return r.db.Where("short_link_id = ?", id).Delete(&models.Click{}).Error
 }

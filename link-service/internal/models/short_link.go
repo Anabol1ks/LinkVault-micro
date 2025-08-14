@@ -16,6 +16,8 @@ type ShortLink struct {
 	ExpireAt    *time.Time
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 
+	DeactivatedAt *time.Time
+
 	Clicks []Click `gorm:"foreignKey:ShortLinkID"`
 }
 
