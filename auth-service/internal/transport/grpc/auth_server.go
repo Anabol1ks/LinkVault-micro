@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	authv1 "github.com/Anabol1ks/linkvault-proto/auth/v1"
-
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"

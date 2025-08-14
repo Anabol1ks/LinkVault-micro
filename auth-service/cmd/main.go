@@ -26,13 +26,6 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-// @Title						LinkVault AuthService API
-// @Version					1.0
-// @securityDefinitions.apikey	BearerAuth
-// @in							header
-// @name						Authorization
-// @host      localhost:8081
-// @BasePath  /api/v1
 func main() {
 	_ = godotenv.Load()
 	isDev := os.Getenv("ENV") == "development"
