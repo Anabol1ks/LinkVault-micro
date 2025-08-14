@@ -246,12 +246,6 @@ GORM `AutoMigrate` применяется на старте ко всем мод
 
 ## Локальная разработка
 
-Перегенерация protobuf (пример):
-
-```bash
-protoc --go_out=. --go-grpc_out=. proto/auth/v1/auth.proto
-```
-
 Фактические файлы берутся из внешнего репозитория [linkvault-proto](https://github.com/Anabol1ks/linkvault-proto/tree/master/auth/v1); убедитесь в обновлении версии модуля в go.mod при изменениях.
 
 ## Тестирование (скоро будет)
