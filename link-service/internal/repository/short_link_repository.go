@@ -48,21 +48,18 @@ func (r *ShortLinkRepository) GetShortLinkByID(id string, userID uuid.UUID) (*mo
 	return &shortLink, nil
 }
 
-// Найти истёкшие анонимные ссылки
 func (r *ShortLinkRepository) FindExpiredAnonLinks() ([]*models.ShortLink, error) {
 	var links []*models.ShortLink
 	err := r.db.Where("user_id IS NULL AND expire_at IS NOT NULL AND expire_at < ?", time.Now()).Find(&links).Error
 	return links, err
 }
 
-// Найти истёкшие деактивированные анонимные ссылки
 func (r *ShortLinkRepository) FindExpiredInactiveAnonLinks() ([]*models.ShortLink, error) {
 	var links []*models.ShortLink
 	err := r.db.Where("user_id IS NULL AND is_active = false AND expire_at IS NOT NULL AND expire_at < ?", time.Now()).Find(&links).Error
 	return links, err
 }
 
-// Найти истёкшие деактивированные пользовательские ссылки, которые были деактивированы более недели назад
 func (r *ShortLinkRepository) FindExpiredInactiveUserLinks() ([]*models.ShortLink, error) {
 	var links []*models.ShortLink
 	weekAgo := time.Now().Add(-7 * 24 * time.Hour)
@@ -70,19 +67,16 @@ func (r *ShortLinkRepository) FindExpiredInactiveUserLinks() ([]*models.ShortLin
 	return links, err
 }
 
-// Удалить ссылку
 func (r *ShortLinkRepository) DeleteLink(link *models.ShortLink) error {
 	return r.db.Delete(link).Error
 }
 
-// Деактивировать истёкшие анонимные ссылки
 func (r *ShortLinkRepository) DeactivateExpiredAnonLinks() error {
 	return r.db.Model(&models.ShortLink{}).
 		Where("user_id IS NULL AND is_active = true AND expire_at IS NOT NULL AND expire_at < ?", time.Now()).
 		Update("is_active", false).Error
 }
 
-// Деактивировать истёкшие пользовательские ссылки
 func (r *ShortLinkRepository) DeactivateExpiredUserLinks() error {
 	return r.db.Model(&models.ShortLink{}).
 		Where("user_id IS NOT NULL AND is_active = true AND expire_at IS NOT NULL AND expire_at < ?", time.Now()).

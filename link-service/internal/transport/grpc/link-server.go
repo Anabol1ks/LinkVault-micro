@@ -235,3 +235,89 @@ func (s *LinkServer) GetShortLink(ctx context.Context, req *linkv1.GetShortLinkR
 		IsActive:    shortLink.IsActive,
 	}, nil
 }
+
+func (s *LinkServer) GetLinkStats(ctx context.Context, req *linkv1.GetLinkStatsRequest) (*linkv1.LinkStatsResponse, error) {
+	s.shortService.Log.Info("start", zap.String("op", "GetLinkStats"))
+	if err := req.Validate(); err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkStats"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
+	userID, ok := ctx.Value("user_id").(uuid.UUID)
+
+	if !ok {
+		s.shortService.Log.Warn("failed", zap.Error(errors.New("user_id not found in context")))
+		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
+	}
+
+	_, err := s.shortService.GetShortLinkByID(req.ShortLinkId, userID)
+	if err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkStats"), zap.Error(err))
+		return nil, status.Errorf(codes.NotFound, "short link not found: %v", err)
+	}
+
+	stats, err := s.clickService.GetStats(req.ShortLinkId)
+	if err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkStats"), zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to get link stats: %v", err)
+	}
+
+	resp := &linkv1.LinkStatsResponse{
+		Stats: &linkv1.DetailedLinkStats{
+			Total:          stats.Total,
+			UniqueIpCount:  stats.UniqueIPCount,
+			UniqueIps:      stats.UniqueIPs,
+			CountriesCount: int32(stats.CountriesCount),
+			Countries:      stats.Countries,
+			DailyStats:     stats.DailyStats,
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *LinkServer) GetLinkClicks(ctx context.Context, req *linkv1.GetLinkClicksRequest) (*linkv1.GetLinkClicksResponse, error) {
+	s.shortService.Log.Info("start", zap.String("op", "GetLinkClicks"))
+	if err := req.Validate(); err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkStats"), zap.Error(err))
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
+	userID, ok := ctx.Value("user_id").(uuid.UUID)
+
+	if !ok {
+		s.shortService.Log.Warn("failed", zap.Error(errors.New("user_id not found in context")))
+		return nil, status.Errorf(codes.Unauthenticated, "user not found: %v", "user_id not found in context")
+	}
+
+	_, err := s.shortService.GetShortLinkByID(req.ShortLinkId, userID)
+	if err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkClicks"), zap.Error(err))
+		return nil, status.Errorf(codes.NotFound, "short link not found: %v", err)
+	}
+
+	clicks, err := s.clickService.GetClicks(req.ShortLinkId)
+	if err != nil {
+		s.shortService.Log.Warn("failed", zap.String("op", "GetLinkClicks"), zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to get link clicks: %v", err)
+	}
+
+	var clicksResp []*linkv1.Click
+
+	for _, click := range clicks {
+		clicksResp = append(clicksResp, &linkv1.Click{
+			Id:        click.ID.String(),
+			Ip:        click.IP,
+			UserAgent: click.UserAgent,
+			ClickedAt: click.ClickedAt.Format(time.RFC3339),
+			Country:   click.Country,
+			Region:    click.Region,
+		})
+	}
+
+	resp := &linkv1.GetLinkClicksResponse{
+		Clicks: clicksResp,
+	}
+
+	return resp, nil
+}

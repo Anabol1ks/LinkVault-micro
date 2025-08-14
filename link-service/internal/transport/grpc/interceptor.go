@@ -83,6 +83,8 @@ var authRequiredMethods = map[string]bool{
 	"/link.v1.LinkService/ListShortLinks":  true,
 	"/link.v1.LinkService/DeleteShortLink": true,
 	"/link.v1.LinkService/GetShortLink":    true,
+	"/link.v1.LinkService/GetLinkStats":    true,
+	"/link.v1.LinkService/GetLinkClicks":   true,
 }
 
 var authOptionalMethods = map[string]bool{
