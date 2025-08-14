@@ -10,5 +10,15 @@ services:
     ports:
       - "5434:5432"
 
+  link-service:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - link-db
+    restart: unless-stopped
+
 volumes:
   db_data:
