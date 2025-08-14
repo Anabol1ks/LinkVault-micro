@@ -153,6 +153,38 @@ Healthcheck в `docker-compose.yml` проверяет существовани�
 ```
 И установить `TMPL_DIR=internal/templates/`.
 
+### !Kafka по умолчанию не включён. Можно добавить сервис Kafka, например:
+
+```yaml
+  services:
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: kafka
+    environment:
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_NODE_ID=1
+      - KAFKA_LISTENERS=INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://host.docker.internal:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    ports:
+      - "9092:9092"   # внешний доступ (EXTERNAL)
+      - "29092:29092" # при необходимости тестов из других контейнеров можно тоже использовать
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+```
+
+И скорректировать `KAFKA_BROKERS=kafka:9092` (если запущен в отдельном контейнере, то `KAFKA_BROKERS=host.docker.internal:9092`).
+
 ### Makefile цели
 | Цель | Описание |
 |------|----------|
