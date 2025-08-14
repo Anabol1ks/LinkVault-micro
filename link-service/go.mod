@@ -3,7 +3,7 @@ module link-service
 go 1.24.0
 
 require (
-	github.com/Anabol1ks/linkvault-proto v0.1.25
+	github.com/Anabol1ks/linkvault-proto v0.1.26
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/joho/godotenv v1.5.1

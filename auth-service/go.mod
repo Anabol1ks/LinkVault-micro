@@ -3,7 +3,7 @@ module auth-service
 go 1.24.0
 
 require (
-	github.com/Anabol1ks/linkvault-proto v0.1.25
+	github.com/Anabol1ks/linkvault-proto v0.1.26
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
